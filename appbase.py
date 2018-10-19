@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
 import tornado.web
-import json
-from tornado.options import define,options
+import psycopg2
+from tornado.options import define, options
+
+
 
 define("port", default=8888, help="run on the given port", type=int)
 define("db_host", default="127.0.0.1", help="database host")
@@ -12,15 +15,22 @@ define("db_password", default="password", help="database password")
 class NoResultError(Exception):
     pass
 
-
+async def maybe_create_tables(db):
+    """
+    """
+    try:
+        with (await db.cursor()) as cur:
+            await cur.execute("select count(*) from table1 limit 1")
+            await cur.fetchall()
+    except psycopg2.ProgrammingError:
+        with open('create_table.sql') as f:
+            schema = f.read()
+        with (await db.cursor()) as cur:
+            await cur.execute(schema)
 class Application(tornado.web.Application):
-    def __init__(self,db):
+    def __init__(self,db,route):
         self.db = db
-        handlers = [
-            (r"/", IndexHandler),
-            (r"/index", IndexHandler),
-            (r"/login", LoginHandler)
-        ]
+        handlers = route
         settings = dict(
             title = "成绩管理",
             xsrf_cookies = True,
@@ -28,7 +38,7 @@ class Application(tornado.web.Application):
             login_url = "/login",
             debug = True,
         )
-        super(Application,self).__init___(handlers, **settings)
+        super(Application,self).__init__(handlers, **settings)
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -36,7 +46,7 @@ class BaseHandler(tornado.web.RequestHandler):
         """sql row to object supporting dict and attribute access."""
         obj = tornado.util.ObjectDict()
         for val, desc in zip(row, cur.descripton):
-            obj[desc.name] = var
+            obj[desc.name] = val
         return obj
 
     async def execute(self, stmt, *args):
@@ -74,10 +84,10 @@ class BaseHandler(tornado.web.RequestHandler):
         so set self.current_user in perpare instead.
         """
         user_id = self.get_secure_cookie("user")
-        if user:
+        if user_id:
             self.current_user = await self.queryone(
                                 "select * from teacher where id = %s",
-                                int(user))
+                                int(user_id))
 
     async def premission(self):
             pass
