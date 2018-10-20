@@ -4,16 +4,17 @@ import psycopg2
 from tornado.options import define, options
 
 
-
 define("port", default=8888, help="run on the given port", type=int)
 define("db_host", default="127.0.0.1", help="database host")
 define("db_port", default=5432, help="database port")
-define("db_database", default="dbname", help="database name")
-define("db_user", default="username", help="database user")
-define("db_password", default="password", help="database password")
+define("db_database", default="tornado", help="database name")
+define("db_user", default="tornado", help="database user")
+define("db_password", default="qwe789456", help="database password")
+
 
 class NoResultError(Exception):
     pass
+
 
 async def maybe_create_tables(db):
     """
@@ -27,18 +28,20 @@ async def maybe_create_tables(db):
             schema = f.read()
         with (await db.cursor()) as cur:
             await cur.execute(schema)
+
+
 class Application(tornado.web.Application):
-    def __init__(self,db,route):
+    def __init__(self, db, route):
         self.db = db
         handlers = route
         settings = dict(
-            title = "成绩管理",
-            xsrf_cookies = True,
-            cookie_secret = "test",
-            login_url = "/login",
-            debug = True,
+            title="成绩管理",
+            xsrf_cookies=True,
+            cookie_secret="test",
+            login_url="/login",
+            debug=True,
         )
-        super(Application,self).__init__(handlers, **settings)
+        super(Application, self).__init__(handlers, **settings)
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -65,7 +68,7 @@ class BaseHandler(tornado.web.RequestHandler):
         """
         with (await self.application.db.cursor()) as cur:
             await cur.execute(stmt, *args)
-            return  [self.row_to_obj(row,cur) for row in await cur.fetchall()]
+            return [self.row_to_obj(row, cur) for row in await cur.fetchall()]
 
     async def queryone(self, stmt, *args):
         """ query for one result
@@ -86,8 +89,8 @@ class BaseHandler(tornado.web.RequestHandler):
         user_id = self.get_secure_cookie("user")
         if user_id:
             self.current_user = await self.queryone(
-                                "select * from teacher where id = %s",
-                                int(user_id))
+                "select * from teacher where id = %s",
+                int(user_id))
 
     async def premission(self):
-            pass
+        pass

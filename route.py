@@ -1,5 +1,7 @@
 #!/bin/usr/env python3
-import tornado
+"""
+This module is routing for app
+"""
 import handler
 route_handler = [
     (r"/", handler.IndexHandler),
