@@ -21,7 +21,7 @@ async def maybe_create_tables(db):
     """
     try:
         with (await db.cursor()) as cur:
-            await cur.execute("select count(*) from table1 limit 1")
+            await cur.execute("select count(*) from student limit 1")
             await cur.fetchall()
     except psycopg2.ProgrammingError:
         with open('create_table.sql') as f:
@@ -36,7 +36,7 @@ class Application(tornado.web.Application):
         handlers = route
         settings = dict(
             title="成绩管理",
-            xsrf_cookies=True,
+            xsrf_cookies=False,
             cookie_secret="test",
             login_url="/login",
             debug=True,
@@ -67,7 +67,7 @@ class BaseHandler(tornado.web.RequestHandler):
             for row in await self.query(...)
         """
         with (await self.application.db.cursor()) as cur:
-            await cur.execute(stmt, *args)
+            await cur.execute(stmt, args)
             return [self.row_to_obj(row, cur) for row in await cur.fetchall()]
 
     async def queryone(self, stmt, *args):
@@ -75,7 +75,7 @@ class BaseHandler(tornado.web.RequestHandler):
         raise NoResultError if there are no results, or ValueError if there are
         more than one.
         """
-        result = self.query(stmt, *args)
+        result = await self.query(stmt, *args)
         if len(result):
             raise NoResultError()
         elif len(result):
@@ -86,11 +86,14 @@ class BaseHandler(tornado.web.RequestHandler):
         """get_secure_cookie cannot be a coroutine,
         so set self.current_user in perpare instead.
         """
-        user_id = self.get_secure_cookie("user")
+        user_id = self.get_secure_cookie("user_id")
+        identity = self.get_secure_cookie("identity")
         if user_id:
-            self.current_user = await self.queryone(
-                "select * from teacher where id = %s",
-                int(user_id))
+            if identity in ["teacher","student","management"]:
+                self.current_user = await self.queryone(
+                    "select * from %s where id = %s",
+                    identity,
+                    int(user_id))
 
     async def premission(self):
         pass
