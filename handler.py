@@ -14,48 +14,40 @@ class LoginHandler(appbase.BaseHandler):
     # async def get(self):
     #     self.write("Index Page.")
     async def post(self):
-        # username = self.get_argument("username",None)
-        # password = self.get_argument("password",None)
+        username = self.get_argument("username",None)
+        password = self.get_argument("password",None)
         identity = self.get_argument("identity",None)
+        data = dict(
+            name = username,
+            user_id = None,
+            access = [identity],
+            avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
+            message = ""
+        )
+        if identity not in ["teacher","student","management"]:
+            data['message'] = "identity wrong."
+            self.write(json.dumps(data))
         try:
-            status = await self.queryone(
-                    "select * from %s where "
-                    "username=%s",
-                    self.get_argument("identity",None),
-                    self.get_argument("username",None))
+            status = await self.queryone("select * from " + identity + " where no=%s",(username,))
+
         except NoResultError:
-            self.write(json.dumps({"login":False,"message":"user not find."}))
+            data['message'] = "not find user."
+            self.write(json.dumps(data))
             return
-        if identity == "management":
-            hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
-            None,bcrypt.hashpw, tornado.escape.utf8(self.get_argument("password")),
-            tornado.escape.utf8(status.mpwd))
-            hashed_password = tornado.escape.to_unicode(hashed_password)
-            if hashed_password == status.mpwd:
-                self.write(json.dumps({"login":True,"message":""}))
-                self.set_secure_cookie("user_id",str(status.mno))
-                self.set_secure_cookie("access",identity)
-            else:
-                self.write(json.dumps({"login":False,"message":"incorrect password"}))
-        elif identity == "teacher":
-            hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
-            None,bcrypt.hashpw, tornado.escape.utf8(self.get_argument("password")),
-            tornado.escape.utf8(status.tpwd))
-            hashed_password = tornado.escape.to_unicode(hashed_password)
-            if hashed_password == status.tpwd:
-                self.write(json.dumps({"login":True,"message":""}))
-                self.set_secure_cookie("user_id",str(status.tno))
-                self.set_secure_cookie("access",identity)
-            else:
-                self.write(json.dumps({"login":False,"message":"incorrect password"}))
+
+        hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
+                None,bcrypt.hashpw, tornado.escape.utf8(password),
+                tornado.escape.utf8(status.password))
+        hashed_password = tornado.escape.to_unicode(hashed_password)
+
+        if hashed_password == status.password:
+            data["token"] = username
+            data['message']="success."
+            data['user_id']=str(status.id)
+            self.set_secure_cookie("user_id",str(status.id))
         else:
-            hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
-            None,bcrypt.hashpw, tornado.escape.utf8(self.get_argument("password")),
-            tornado.escape.utf8(status.spwd))
-            hashed_password = tornado.escape.to_unicode(hashed_password)
-            if hashed_password == status.spwd:
-                self.write(json.dumps({"login":True,"message":""}))
-                self.set_secure_cookie("user_id",str(status.sno))
-                self.set_secure_cookie("access",identity)
-            else:
-                self.write(json.dumps({"login":False,"message":"incorrect password"}))
+            data['message']="username or password wrong."
+
+        self.write(json.dumps(data))
+
+            # self.set_secure_cookie("access",identity)

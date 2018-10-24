@@ -1,7 +1,7 @@
 CREATE TABLE "course" (
-  "cno" SERIAL CONSTRAINT "pk_course" PRIMARY KEY,
+  "id" INTEGER CONSTRAINT "pk_course" PRIMARY KEY,
+  "cno" TEXT NOT NULL,
   "cname" TEXT NOT NULL,
-  "cteacher" TEXT NOT NULL,
   "cclass" TEXT NOT NULL,
   "ctype" TEXT NOT NULL,
   "ccredits" INTEGER,
@@ -9,16 +9,14 @@ CREATE TABLE "course" (
 );
 
 CREATE TABLE "management" (
-  "mno" SERIAL CONSTRAINT "pk_management" PRIMARY KEY,
-  "mpwd" TEXT NOT NULL,
-  "mname" TEXT NOT NULL
+  "id" INTEGER CONSTRAINT "pk_management" PRIMARY KEY,
+  "no" TEXT NOT NULL,
+  "password" TEXT NOT NULL
 );
 
 CREATE TABLE "score" (
-  "id" SERIAL CONSTRAINT "pk_score" PRIMARY KEY,
-  "sname" TEXT NOT NULL,
-  "cname" TEXT NOT NULL,
-  "score" TEXT NOT NULL
+  "id" INTEGER CONSTRAINT "pk_score" PRIMARY KEY,
+  "score" DOUBLE PRECISION
 );
 
 CREATE TABLE "course_scores" (
@@ -29,17 +27,18 @@ CREATE TABLE "course_scores" (
 
 CREATE INDEX "idx_course_scores" ON "course_scores" ("score");
 
-ALTER TABLE "course_scores" ADD CONSTRAINT "fk_course_scores__course" FOREIGN KEY ("course") REFERENCES "course" ("cno");
+ALTER TABLE "course_scores" ADD CONSTRAINT "fk_course_scores__course" FOREIGN KEY ("course") REFERENCES "course" ("id");
 
 ALTER TABLE "course_scores" ADD CONSTRAINT "fk_course_scores__score" FOREIGN KEY ("score") REFERENCES "score" ("id");
 
 CREATE TABLE "student" (
-  "sno" SERIAL CONSTRAINT "pk_student" PRIMARY KEY,
-  "sname" TEXT NOT NULL,
+  "id" INTEGER CONSTRAINT "pk_student" PRIMARY KEY,
+  "no" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "password" TEXT NOT NULL,
   "ssex" TEXT NOT NULL,
   "sclass" TEXT NOT NULL,
-  "sgrade" INTEGER,
-  "spwd" TEXT NOT NULL
+  "sgrade" TEXT NOT NULL
 );
 
 CREATE TABLE "score_students" (
@@ -52,13 +51,14 @@ CREATE INDEX "idx_score_students" ON "score_students" ("score");
 
 ALTER TABLE "score_students" ADD CONSTRAINT "fk_score_students__score" FOREIGN KEY ("score") REFERENCES "score" ("id");
 
-ALTER TABLE "score_students" ADD CONSTRAINT "fk_score_students__student" FOREIGN KEY ("student") REFERENCES "student" ("sno");
+ALTER TABLE "score_students" ADD CONSTRAINT "fk_score_students__student" FOREIGN KEY ("student") REFERENCES "student" ("id");
 
 CREATE TABLE "teacher" (
-  "tno" SERIAL CONSTRAINT "pk_teacher" PRIMARY KEY,
-  "tname" TEXT NOT NULL,
-  "tprofession" TEXT NOT NULL,
-  "tpwd" TEXT NOT NULL
+  "id" INTEGER CONSTRAINT "pk_teacher" PRIMARY KEY,
+  "no" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "password" TEXT NOT NULL,
+  "tprofession" TEXT NOT NULL
 );
 
 CREATE TABLE "course_teachers" (
@@ -69,6 +69,6 @@ CREATE TABLE "course_teachers" (
 
 CREATE INDEX "idx_course_teachers" ON "course_teachers" ("teacher");
 
-ALTER TABLE "course_teachers" ADD CONSTRAINT "fk_course_teachers__course" FOREIGN KEY ("course") REFERENCES "course" ("cno");
+ALTER TABLE "course_teachers" ADD CONSTRAINT "fk_course_teachers__course" FOREIGN KEY ("course") REFERENCES "course" ("id");
 
-ALTER TABLE "course_teachers" ADD CONSTRAINT "fk_course_teachers__teacher" FOREIGN KEY ("teacher") REFERENCES "teacher" ("tno")
+ALTER TABLE "course_teachers" ADD CONSTRAINT "fk_course_teachers__teacher" FOREIGN KEY ("teacher") REFERENCES "teacher" ("id")

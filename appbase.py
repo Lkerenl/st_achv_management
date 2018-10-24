@@ -48,7 +48,7 @@ class BaseHandler(tornado.web.RequestHandler):
     def row_to_obj(self, row, cur):
         """sql row to object supporting dict and attribute access."""
         obj = tornado.util.ObjectDict()
-        for val, desc in zip(row, cur.descripton):
+        for val, desc in zip(row, cur.description):
             obj[desc.name] = val
         return obj
 
@@ -76,9 +76,9 @@ class BaseHandler(tornado.web.RequestHandler):
         more than one.
         """
         result = await self.query(stmt, *args)
-        if len(result):
+        if len(result) == 0:
             raise NoResultError()
-        elif len(result):
+        elif len(result) > 1:
             raise ValueError("Expectecd 1 result, got %d" % len(result))
         return result[0]
 
