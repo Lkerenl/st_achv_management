@@ -19,10 +19,15 @@ class LoginHandler(appbase.BaseHandler):
         self.write("Index Page.")
     async def post(self):
         self.set_allow_origin()
-        username = self.get_argument("username",None)
-        password = self.get_argument("password",None)
-        identity = self.get_argument("identity",None)
+        login_info = json.loads(self.request.body)
+        login_info = tornado.util.ObjectDict(login_info)
+        # username = self.get_argument("username",None)
+        # password = self.get_argument("password",None)
+        # identity = self.get_argument("identity",None)
         # self.set_allow_origin()
+        username = login_info.userName
+        password = login_info.password
+        identity = login_info.identity
         data = dict(
             name = username,
             user_id = None,
