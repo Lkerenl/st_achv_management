@@ -52,6 +52,13 @@ class BaseHandler(tornado.web.RequestHandler):
             obj[desc.name] = val
         return obj
 
+    def set_allow_origin(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Credentials", "true")
+        self.set_header("Access-Control-Allow-Methods", "*")
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with,Content-Type,Access-Token,Access,Accept")
+        self.set_header("Access-Control-Expose-Headers", "*")
+
     async def execute(self, stmt, *args):
         """ execute sql statement
         called with `await self.execute(...)`
