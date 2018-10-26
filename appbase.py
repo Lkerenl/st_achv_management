@@ -102,5 +102,6 @@ class BaseHandler(tornado.web.RequestHandler):
                     identity,
                     int(user_id))
 
-    async def premission(self):
-        pass
+    def get_current_user(self):
+        session = self.get_secure_cookie("session",None)
+        return session

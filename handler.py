@@ -6,9 +6,11 @@ import json
 import appbase
 from appbase import NoResultError
 
+
 class IndexHandler(appbase.BaseHandler):
     async def get(self):
         self.write("Index Page.")
+
 
 class LoginHandler(appbase.BaseHandler):
     async def options(self):
@@ -21,28 +23,21 @@ class LoginHandler(appbase.BaseHandler):
         self.set_allow_origin()
         login_info = json.loads(self.request.body)
         login_info = tornado.util.ObjectDict(login_info)
-        # username = self.get_argument("username",None)
-        # password = self.get_argument("password",None)
-        # identity = self.get_argument("identity",None)
-        # self.set_allow_origin()
+
         username = login_info.userName
         password = login_info.password
         identity = login_info.identity
+
         data = dict(
-            name = username,
-            user_id = None,
-            access = [identity],
-            avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
-            message = ""
+            token = None,
+            message = "success"
         )
-        if identity not in ["teacher","student","management"]:
+        if identity not in ["teacher", "student", "management"]:
             self.write("identity wrong.")
-            self.set_status(404)
             self.finish()
             return
         try:
-            status = await self.queryone("select * from " + identity + " where no=%s",username)
-
+            status = await self.queryone("select * from " + identity + " where no=%s", username)
         except NoResultError:
             self.write("not user fond.")
             return
@@ -54,29 +49,51 @@ class LoginHandler(appbase.BaseHandler):
 
         if hashed_password == status.password:
             data["token"] = username
-            data['message']="success."
-            data['user_id']=str(status.id)
-            self.set_secure_cookie("user_id",str(status.id))
-            self.set_secure_cookie("identity",identity)
+
+            session = dict(
+                user_id = status.id,
+                identity = identity
+            )
+            self.set_secure_cookie("session", json.dumps(session))
+
         else:
             self.write("username or password wrong.")
-            self.set_status(404)
             self.finish()
         self.write(json.dumps(data))
 
-            # self.set_secure_cookie("access",identity)
+
+class LogOutHandler(appbase.BaseHandler):
+    async def post(self):
+        self.clear_all_cookies()
+        return
+
+
 class UserInfoHandler(appbase.BaseHandler):
-    @tornado.web.authenticated
+    # @tornado.web.authenticated
     async def get(self):
         self.set_allow_origin()
-        user_id = self.current_user
-        identity = self.get_secure_cookie("identity")
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        session = tornado.util.ObjectDict(session)
+        identity = session.identity
+        user_id = session.user_id
         try:
-            result = self.queryone("select * from " + identity + " where id=%d",int(user_id))
+            result = self.queryone("select * from " + identity + " where id=%d", user_id)
         except NoResultError:
-            self.set_status(404)
             self.write("no user font.")
             return
+        if result.no == self.get_argument("token", None):
+            data = dict(
+                name = result.no,
+                user_id = user_id,
+                id = result.name,
+                access = [identity],
+                avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
+                message = ""
+            )
+            data = tornado.util.ObjectDict(data)
         self.write(json.dumps(result))
 
         # result =
