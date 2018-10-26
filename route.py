@@ -7,7 +7,7 @@ route_handler = [
     (r"/", handler.IndexHandler),
     (r"/index", handler.IndexHandler),
     (r"/login", handler.LoginHandler),
-    (r"/userinfo", handler.UserInfoHandler),
+    (r"/get_info", handler.UserInfoHandler),
 ]
 
 # class Route(tornado.routing.Router):
