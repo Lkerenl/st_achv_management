@@ -53,7 +53,7 @@ class BaseHandler(tornado.web.RequestHandler):
         return obj
 
     def set_allow_origin(self):
-        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Origin", "http://localhost:8080")
         self.set_header("Access-Control-Allow-Credentials", "true")
         self.set_header("Access-Control-Allow-Methods", "*")
         self.set_header("Access-Control-Allow-Headers", "x-requested-with,Content-Type,Access-Token,Access,Accept")

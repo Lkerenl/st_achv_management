@@ -76,11 +76,12 @@ class UserInfoHandler(appbase.BaseHandler):
         if not session:
             self.write("no login")
             return
+        session = json.loads(session)
         session = tornado.util.ObjectDict(session)
         identity = session.identity
         user_id = session.user_id
         try:
-            result = self.queryone("select * from " + identity + " where id=%d", user_id)
+            result = await self.queryone("select * from " + identity + " where id=%s", str(user_id))
         except NoResultError:
             self.write("no user font.")
             return
@@ -88,12 +89,15 @@ class UserInfoHandler(appbase.BaseHandler):
             data = dict(
                 name = result.no,
                 user_id = user_id,
-                id = result.name,
                 access = [identity],
                 avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
-                message = ""
+                message = result
             )
             data = tornado.util.ObjectDict(data)
+            self.write(json.dumps(data))
+            return
+        self.set_status(404)
+
         # self.write(json.dumps(result))
 
         # result =
