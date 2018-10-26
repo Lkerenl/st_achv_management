@@ -7,7 +7,7 @@ route_handler = [
     (r"/", handler.IndexHandler),
     (r"/index", handler.IndexHandler),
     (r"/login", handler.LoginHandler),
-    (r"logout", handler.LogOutHandler),
+    (r"/logout", handler.LogOutHandler),
     (r"/get_info", handler.UserInfoHandler),
 
 ]

@@ -94,6 +94,6 @@ class UserInfoHandler(appbase.BaseHandler):
                 message = ""
             )
             data = tornado.util.ObjectDict(data)
-        self.write(json.dumps(result))
+        # self.write(json.dumps(result))
 
         # result =
