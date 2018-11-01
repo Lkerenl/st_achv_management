@@ -38,7 +38,7 @@ class Application(tornado.web.Application):
             title="成绩管理",
             xsrf_cookies=False,
             cookie_secret="test",
-            login_url="/login",
+            login_url="http://localhost:8080/login",
             debug=True,
         )
         super(Application, self).__init__(handlers, **settings)
@@ -104,4 +104,9 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def get_current_user(self):
         session = self.get_secure_cookie("session",None)
+        if session:
+            try:
+                session = tornado.escape.json_decode(session)
+            except:
+                self.write_error(403,"cookie error.")
         return session
