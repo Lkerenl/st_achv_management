@@ -21,7 +21,7 @@ class LoginHandler(appbase.BaseHandler):
         self.write("Index Page.")
     async def post(self):
         self.set_allow_origin()
-        login_info = json.loads(self.request.body)
+        login_info = json.loads(self.request.body.decode('utf-8'))
         login_info = tornado.util.ObjectDict(login_info)
 
         username = login_info.userName
@@ -76,7 +76,7 @@ class UserInfoHandler(appbase.BaseHandler):
         if not session:
             self.write("no login")
             return
-        session = json.loads(session)
+        session = json.loads(session.decode('utf-8'))
         session = tornado.util.ObjectDict(session)
         identity = session.identity
         user_id = session.user_id
@@ -101,3 +101,65 @@ class UserInfoHandler(appbase.BaseHandler):
         # self.write(json.dumps(result))
 
         # result =
+
+class InsertDataHandler(appbase.BaseHandler):
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        session = json.loads(session.decode('utf-8'))
+        session = tornado.util.ObjectDict(session)
+        id = session.user_id
+        result = await self.query("select cno from tea_cour_view where id=%s",str(id))
+        data = dict(
+            message = result
+        )
+        data = tornado.util.ObjectDict(data)
+        self.write(json.dumps(data))
+        return
+
+class TableDataHandle(appbase.BaseHandler):
+    async def post(self):
+        self.set_allow_origin()
+        key = str(self.request.body.decode('utf-8'))
+        result = await self.query("select no,name from score_view where cno=%s",key)
+        list(map(lambda x:x.update(regular=0,exam=0,expr=0),result))
+        data = dict(
+            message = result
+        )
+        data = tornado.util.ObjectDict(data)
+        self.write(json.dumps(data))
+        return
+
+class CommitTableData(appbase.BaseHandler):
+    async def options(self):
+        self.set_status(204)
+        self.set_allow_origin()
+    async def post(self):
+        self.set_allow_origin()
+        data = json.loads(self.request.body.decode('utf-8'))
+        data = tornado.util.ObjectDict(data)
+        cno = data.key
+        print(cno)
+        score_info = data.tableData
+        course_result = await self.query("select id from course where cno=%s",cno)
+        student_result = await self.query("select id from student where no=%s",score_info[0]['no'])
+        tmp_score_result = await self.query("select id from tmp_scores where course=%s",course_result[0]['id'])
+        score_result = await self.query("select score from score_view where cno=%s limit 1",cno)
+        print(len(tmp_score_result))
+        print(len(score_result))
+        if len(tmp_score_result) == 0 and score_result[0]["score"] == None:
+            for info in score_info:
+                await self.execute("insert into tmp_scores(regular,exam,student,course,expr) values(%s,%s,%s,%s,%s)",str(info['regular']),str(info['exam']),str(student_result[0]['id']),str(course_result[0]['id']),str(info['expr']))
+            self.write("写入成功")
+        else:
+            self.write("请不要重复提交")
+            return
+
+        # print(len(score_result))
+        # student_result = await self.query("select id from student where no=%s",score_info[0]['no'])
+        # print(student_result[0]['id'])
+        # print(course_result[0]['id'])
+        # print(type(tmp_score_result[0]['id']))

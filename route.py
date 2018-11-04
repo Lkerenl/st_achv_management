@@ -9,6 +9,9 @@ route_handler = [
     (r"/login", handler.LoginHandler),
     (r"/logout", handler.LogOutHandler),
     (r"/get_info", handler.UserInfoHandler),
+    (r"/get_insert_data", handler.InsertDataHandler),
+    (r"/get_table_data",handler.TableDataHandle),
+    (r"/commitTableData",handler.CommitTableData),
 
 ]
 
