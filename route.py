@@ -12,6 +12,9 @@ route_handler = [
     (r"/get_insert_data", handler.InsertDataHandler),
     (r"/get_table_data",handler.TableDataHandle),
     (r"/commitTableData",handler.CommitTableData),
+    (r"/getScoreCnoData",handler.GetScoreCnoDataHandler),
+    (r"/getScoreData",handler.GetScoreDataHandler),
+    (r"/getAllScore",handler.getAllScoreHandler),
 
 ]
 

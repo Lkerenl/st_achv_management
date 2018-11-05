@@ -158,8 +158,119 @@ class CommitTableData(appbase.BaseHandler):
             self.write("请不要重复提交")
             return
 
-        # print(len(score_result))
-        # student_result = await self.query("select id from student where no=%s",score_info[0]['no'])
-        # print(student_result[0]['id'])
-        # print(course_result[0]['id'])
-        # print(type(tmp_score_result[0]['id']))
+class GetScoreDataHandler(appbase.BaseHandler):
+    async def options(self):
+        self.set_status(204)
+        self.set_allow_origin()
+    async def post(self):
+        self.set_allow_origin()
+        key = str(self.request.body.decode('utf-8'))
+        result = await self.queryone("select max(score),min(score),avg(score) from score_view where cno=%s",key)
+        die = result['die']
+        all = result['all']
+        result.update(sodie=((die*1.0)/all)*100,nodie=100-((die*1.0)/all)*100,good=all-die)
+        data = dict(
+            message = result
+        )
+        data = tornado.util.ObjectDict(data)
+        self.write(json.dumps(data))
+
+class GetScoreCnoDataHandler(appbase.BaseHandler):
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        session = json.loads(session.decode('utf-8'))
+        session = tornado.util.ObjectDict(session)
+        id = session.user_id
+        result = await self.query("(select cno from score_view where score is not null) union (select cno from tea_cour_view where id=%s)",str(id))
+        data = dict(
+            message = result
+        )
+        data = tornado.util.ObjectDict(data)
+        self.write(json.dumps(data))
+        return
+
+class ModifyPasswordHandler(appbase.BaseHandler):
+    @tornado.web.authenticated
+    async def post(self):
+        session = self.current_user
+        data = json.loads(self.request.body)
+        if not data.get('old_password',None) and not data.get('new_password',None):
+            self.write("no angr")
+            return
+
+        try:
+            old_hashed_password = await self.queryone("select password from " + session.get('identity', None) + ' where id=%s',str(session.get('user_id',None)))
+        except NoResultError:
+            self.write('user error')
+            return
+
+        hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
+            None,
+            bcrypt.hashpw,
+            tornado.escape.utf8(data.get('old_password',None)),
+            tornado.escape.utf8(old_hashed_password.get('password',None)))
+        hashed_password = tornado.escape.to_unicode(hashed_password)
+
+        if hashed_password == old_hashed_password.get('password',None):
+            new_hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
+                None,
+                bcrypt.hashpw,
+                tornado.escape.utf8(data.get('new_password',None)),
+                bcrypt.gensalt())
+            new_hashed_password = tornado.escape.to_unicode(new_hashed_password)
+            await self.execute('update ' + session.get('identity', None) + ' set password=%s where id=%s',new_hashed_password,str(session.get('user_id',None)))
+            return
+        self.set_status(403)
+
+class getAllScoreHandler(appbase.BaseHandler):
+    async def options(self):
+        self.set_status(204)
+        self.set_allow_origin()
+
+    #@tornado.web.authenticated
+    async def post(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        session = json.loads(session.decode('utf-8'))
+        session = tornado.util.ObjectDict(session)
+        identity = session.identity
+        cno = str(self.request.body.decode('utf-8'))
+        if identity == 'teacher':
+            try:
+                cno = dict(
+                    cno=cno
+                )
+                user_id = session.user_id
+                all_cno = await self.query("select cno from tea_cour_view where id=%s",user_id)
+                if cno in all_cno:
+                    result = await self.query("select no,name,score from score_view where cno=%s", cno['cno'])
+                else:
+                    self.write("你输入的课号有误")
+                    self.set_status(403)
+                    return
+            except NoResultError:
+                self.write("no data fond.")
+                self.set_status(403)
+                return
+        elif identity == 'management':
+            try:
+                result = await self.query("select no,name,score from score_view where cno=%s", cno)
+            except NoResultError:
+                self.write("no data fond.")
+                self.set_status(403)
+                return
+        else:
+            self.write("身份无法验证")
+            self.set_status(403)
+            return
+        data = dict(
+            message=result
+        )
+        self.write(json.dumps(data))
