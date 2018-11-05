@@ -27,7 +27,7 @@ class LoginHandler(appbase.BaseHandler):
 
     async def post(self):
         self.set_allow_origin()
-        login_info = json.loads(self.request.body)
+        login_info = json.loads(self.request.body.decode('utf-8'))
         login_info = tornado.util.ObjectDict(login_info)
 
         username = login_info.userName
@@ -80,8 +80,18 @@ class UserInfoHandler(appbase.BaseHandler):
     async def get(self):
         self.set_allow_origin()
         session = self.current_user
+<<<<<<< HEAD
         identity = session.get('identity',None)
         user_id = session.get('user_id',None)
+=======
+        if not session:
+            self.write("no login")
+            return
+        session = json.loads(session.decode('utf-8'))
+        session = tornado.util.ObjectDict(session)
+        identity = session.identity
+        user_id = session.user_id
+>>>>>>> 92d576ae572d01e9ccb31a3cd9cd85cde6d18355
         try:
             result = await self.queryone("select * from " + identity + " where id=%s", str(user_id))
         except NoResultError:
@@ -166,6 +176,7 @@ class DumpSCHandler(appbase.BaseHandler):
             pass
         # self.write(json.dumps(result))
 
+<<<<<<< HEAD
         data = dict(
             no=st,
             name=list(map(lambda x: x.pop('name',None), result))[0],
@@ -254,6 +265,100 @@ class ConfirmSCHandler(appbase.BaseHandler):
         await self.execute("delete from tmp_scores where course=%s",str(c_id[0].id))
 
 
+=======
+        # result =
+
+class InsertDataHandler(appbase.BaseHandler):
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        session = json.loads(session.decode('utf-8'))
+        session = tornado.util.ObjectDict(session)
+        id = session.user_id
+        result = await self.query("select cno from tea_cour_view where id=%s",str(id))
+        data = dict(
+            message = result
+        )
+        data = tornado.util.ObjectDict(data)
+        self.write(json.dumps(data))
+        return
+
+class TableDataHandle(appbase.BaseHandler):
+    async def post(self):
+        self.set_allow_origin()
+        key = str(self.request.body.decode('utf-8'))
+        result = await self.query("select no,name from score_view where cno=%s",key)
+        list(map(lambda x:x.update(regular=0,exam=0,expr=0),result))
+        data = dict(
+            message = result
+        )
+        data = tornado.util.ObjectDict(data)
+        self.write(json.dumps(data))
+        return
+
+class CommitTableData(appbase.BaseHandler):
+    async def options(self):
+        self.set_status(204)
+        self.set_allow_origin()
+    async def post(self):
+        self.set_allow_origin()
+        data = json.loads(self.request.body.decode('utf-8'))
+        data = tornado.util.ObjectDict(data)
+        cno = data.key
+        print(cno)
+        score_info = data.tableData
+        course_result = await self.query("select id from course where cno=%s",cno)
+        student_result = await self.query("select id from student where no=%s",score_info[0]['no'])
+        tmp_score_result = await self.query("select id from tmp_scores where course=%s",course_result[0]['id'])
+        score_result = await self.query("select score from score_view where cno=%s limit 1",cno)
+        print(len(tmp_score_result))
+        print(len(score_result))
+        if len(tmp_score_result) == 0 and score_result[0]["score"] == None:
+            for info in score_info:
+                await self.execute("insert into tmp_scores(regular,exam,student,course,expr) values(%s,%s,%s,%s,%s)",str(info['regular']),str(info['exam']),str(student_result[0]['id']),str(course_result[0]['id']),str(info['expr']))
+            self.write("写入成功")
+        else:
+            self.write("请不要重复提交")
+            return
+
+class GetScoreDataHandler(appbase.BaseHandler):
+    async def options(self):
+        self.set_status(204)
+        self.set_allow_origin()
+    async def post(self):
+        self.set_allow_origin()
+        key = str(self.request.body.decode('utf-8'))
+        result = await self.queryone("select max(score),min(score),avg(score) from score_view where cno=%s",key)
+        die = result['die']
+        all = result['all']
+        result.update(sodie=((die*1.0)/all)*100,nodie=100-((die*1.0)/all)*100,good=all-die)
+        data = dict(
+            message = result
+        )
+        data = tornado.util.ObjectDict(data)
+        self.write(json.dumps(data))
+
+class GetScoreCnoDataHandler(appbase.BaseHandler):
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        session = json.loads(session.decode('utf-8'))
+        session = tornado.util.ObjectDict(session)
+        id = session.user_id
+        result = await self.query("(select cno from score_view where score is not null) union (select cno from tea_cour_view where id=%s)",str(id))
+        data = dict(
+            message = result
+        )
+        data = tornado.util.ObjectDict(data)
+        self.write(json.dumps(data))
+        return
+>>>>>>> 92d576ae572d01e9ccb31a3cd9cd85cde6d18355
 
 class ModifyPasswordHandler(appbase.BaseHandler):
     @tornado.web.authenticated
@@ -288,6 +393,7 @@ class ModifyPasswordHandler(appbase.BaseHandler):
             return
         self.set_status(403)
 
+<<<<<<< HEAD
 class TestqueryHandler(appbase.BaseHandler):
     async def get(self):
         pass
@@ -329,3 +435,53 @@ class CookieHandler(appbase.BaseHandler):
     async def get(self):
         session = self.current_user
         self.write(session)
+=======
+class getAllScoreHandler(appbase.BaseHandler):
+    async def options(self):
+        self.set_status(204)
+        self.set_allow_origin()
+
+    #@tornado.web.authenticated
+    async def post(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        session = json.loads(session.decode('utf-8'))
+        session = tornado.util.ObjectDict(session)
+        identity = session.identity
+        cno = str(self.request.body.decode('utf-8'))
+        if identity == 'teacher':
+            try:
+                cno = dict(
+                    cno=cno
+                )
+                user_id = session.user_id
+                all_cno = await self.query("select cno from tea_cour_view where id=%s",user_id)
+                if cno in all_cno:
+                    result = await self.query("select no,name,score from score_view where cno=%s", cno['cno'])
+                else:
+                    self.write("你输入的课号有误")
+                    self.set_status(403)
+                    return
+            except NoResultError:
+                self.write("no data fond.")
+                self.set_status(403)
+                return
+        elif identity == 'management':
+            try:
+                result = await self.query("select no,name,score from score_view where cno=%s", cno)
+            except NoResultError:
+                self.write("no data fond.")
+                self.set_status(403)
+                return
+        else:
+            self.write("身份无法验证")
+            self.set_status(403)
+            return
+        data = dict(
+            message=result
+        )
+        self.write(json.dumps(data))
+>>>>>>> 92d576ae572d01e9ccb31a3cd9cd85cde6d18355

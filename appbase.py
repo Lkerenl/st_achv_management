@@ -5,7 +5,7 @@ from tornado.options import define, options
 
 
 define("port", default=8888, help="run on the given port", type=int)
-define("db_host", default="127.0.0.1", help="database host")
+define("db_host", default="192.168.10.231", help="database host")
 define("db_port", default=5432, help="database port")
 define("db_database", default="tornado", help="database name")
 define("db_user", default="tornado", help="database user")
