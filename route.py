@@ -14,6 +14,9 @@ route_handler = [
     (r"/dump_score", handler.DumpSCHandler),
     (r"/confirm_score", handler.ConfirmSCHandler),
     (r"/cookie", handler.CookieHandler),
+    (r"/test", handler.TestqueryHandler),
+    (r"/modify_password",handler.ModifyPasswordHandler),
+
 ]
 
 # class Route(tornado.routing.Router):

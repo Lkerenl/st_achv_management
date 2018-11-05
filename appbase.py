@@ -56,7 +56,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.set_header("Access-Control-Allow-Origin", "http://localhost:8080")
         self.set_header("Access-Control-Allow-Credentials", "true")
         self.set_header("Access-Control-Allow-Methods", "*")
-        self.set_header("Access-Control-Allow-Headers", "x-requested-with,Content-Type,Access-Token,Access,Accept")
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with,Content-Type,Access-Token,Access,Accept,Referer")
         self.set_header("Access-Control-Expose-Headers", "*")
 
     async def execute(self, stmt, *args):
