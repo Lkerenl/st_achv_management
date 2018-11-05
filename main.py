@@ -1,4 +1,5 @@
 import tornado.ioloop
+import tornado.locks
 import tornado.web
 import asyncio
 import aiopg
@@ -26,7 +27,6 @@ async def main():
         user=options.db_user,
         password=options.db_password,
         dbname=options.db_database) as db:
-        input()
         await appbase.maybe_create_tables(db)
         app = appbase.Application(db, route.route_handler)
         app.listen(options.port)

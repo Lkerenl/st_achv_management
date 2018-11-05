@@ -21,7 +21,7 @@ async def maybe_create_tables(db):
     """
     try:
         with (await db.cursor()) as cur:
-            await cur.execute("select count(*) from table1 limit 1")
+            await cur.execute("select count(*) from student limit 1")
             await cur.fetchall()
     except psycopg2.ProgrammingError:
         with open('create_table.sql') as f:
@@ -36,9 +36,9 @@ class Application(tornado.web.Application):
         handlers = route
         settings = dict(
             title="成绩管理",
-            xsrf_cookies=True,
+            xsrf_cookies=False,
             cookie_secret="test",
-            login_url="/login",
+            login_url="http://localhost:8080/login",
             debug=True,
         )
         super(Application, self).__init__(handlers, **settings)
@@ -48,9 +48,16 @@ class BaseHandler(tornado.web.RequestHandler):
     def row_to_obj(self, row, cur):
         """sql row to object supporting dict and attribute access."""
         obj = tornado.util.ObjectDict()
-        for val, desc in zip(row, cur.descripton):
+        for val, desc in zip(row, cur.description):
             obj[desc.name] = val
         return obj
+
+    def set_allow_origin(self):
+        self.set_header("Access-Control-Allow-Origin", "http://localhost:8080")
+        self.set_header("Access-Control-Allow-Credentials", "true")
+        self.set_header("Access-Control-Allow-Methods", "*")
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with,Content-Type,Access-Token,Access,Accept,Referer")
+        self.set_header("Access-Control-Expose-Headers", "*")
 
     async def execute(self, stmt, *args):
         """ execute sql statement
@@ -67,7 +74,7 @@ class BaseHandler(tornado.web.RequestHandler):
             for row in await self.query(...)
         """
         with (await self.application.db.cursor()) as cur:
-            await cur.execute(stmt, *args)
+            await cur.execute(stmt, args)
             return [self.row_to_obj(row, cur) for row in await cur.fetchall()]
 
     async def queryone(self, stmt, *args):
@@ -75,10 +82,10 @@ class BaseHandler(tornado.web.RequestHandler):
         raise NoResultError if there are no results, or ValueError if there are
         more than one.
         """
-        result = self.query(stmt, *args)
-        if len(result):
+        result = await self.query(stmt, *args)
+        if len(result) == 0:
             raise NoResultError()
-        elif len(result):
+        elif len(result) > 1:
             raise ValueError("Expectecd 1 result, got %d" % len(result))
         return result[0]
 
@@ -86,11 +93,20 @@ class BaseHandler(tornado.web.RequestHandler):
         """get_secure_cookie cannot be a coroutine,
         so set self.current_user in perpare instead.
         """
-        user_id = self.get_secure_cookie("user")
+        user_id = self.get_secure_cookie("user_id")
+        identity = self.get_secure_cookie("identity")
         if user_id:
-            self.current_user = await self.queryone(
-                "select * from teacher where id = %s",
-                int(user_id))
+            if identity in ["teacher","student","management"]:
+                self.current_user = await self.queryone(
+                    "select * from %s where id = %s",
+                    identity,
+                    int(user_id))
 
-    async def premission(self):
-        pass
+    def get_current_user(self):
+        session = self.get_secure_cookie("session",None)
+        if session:
+            try:
+                session = tornado.escape.json_decode(session)
+            except:
+                self.write_error(403,"cookie error.")
+        return session
