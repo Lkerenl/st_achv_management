@@ -10,21 +10,21 @@ route_handler = [
     (r"/login", handler.LoginHandler),
     (r"/logout", handler.LogOutHandler),
     (r"/get_info", handler.UserInfoHandler),
-<<<<<<< HEAD
+
     (r"/query_score", handler.QuerySCHandler),
     (r"/dump_score", handler.DumpSCHandler),
     (r"/confirm_score", handler.ConfirmSCHandler),
     (r"/cookie", handler.CookieHandler),
     (r"/test", handler.TestqueryHandler),
     (r"/modify_password",handler.ModifyPasswordHandler),
-=======
+
     (r"/get_insert_data", handler.InsertDataHandler),
     (r"/get_table_data",handler.TableDataHandle),
     (r"/commitTableData",handler.CommitTableData),
     (r"/getScoreCnoData",handler.GetScoreCnoDataHandler),
     (r"/getScoreData",handler.GetScoreDataHandler),
     (r"/getAllScore",handler.getAllScoreHandler),
->>>>>>> 92d576ae572d01e9ccb31a3cd9cd85cde6d18355
+
 
 ]
 
