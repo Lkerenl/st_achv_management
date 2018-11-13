@@ -266,8 +266,16 @@ class InsertDataHandler(appbase.BaseHandler):
         if not session:
             self.write("no login")
             return
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        id = session.get("user_id")
+=======
+        session = json.loads(session)
+>>>>>>> fy
         session = tornado.util.ObjectDict(session)
         id = session.user_id
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
         result = await self.query("select cno from tea_cour_view where id=%s",str(id))
         data = dict(
             message = result
@@ -279,9 +287,19 @@ class InsertDataHandler(appbase.BaseHandler):
 class TableDataHandle(appbase.BaseHandler):
     async def post(self):
         self.set_allow_origin()
+<<<<<<< HEAD
+        key = self.request.body.decode("utf8")
+        print(type(key))
+        print(key)
+        result = await self.query("select no,name from score_view where cno=%s",key)
+        print(result)
+        list(map(lambda x:x.update(regular=0,exam=0,expr=0),result))
+        print(result)
+=======
         key = str(self.request.body)
         result = await self.query("select no,name from score_view where cno=%s",key)
         list(map(lambda x:x.update(regular=0,exam=0,expr=0),result))
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
         data = dict(
             message = result
         )
@@ -364,9 +382,13 @@ class GetScoreCnoDataHandler(appbase.BaseHandler):
         if not session:
             self.write("no login")
             return
+<<<<<<< HEAD
+        id = session.get("user_id")
+=======
         session = json.loads(session)
         session = tornado.util.ObjectDict(session)
         id = session.user_id
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
         result = await self.query("(select cno from score_view where score is not null) union (select cno from tea_cour_view where id=%s)",str(id))
         data = dict(
             message = result
@@ -376,14 +398,27 @@ class GetScoreCnoDataHandler(appbase.BaseHandler):
         return
 
 class ModifyPasswordHandler(appbase.BaseHandler):
+<<<<<<< HEAD
+    async def options(self):
+        self.set_status(204)
+        self.set_allow_origin()
+=======
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
     @tornado.web.authenticated
     async def post(self):
         session = self.current_user
         data = json.loads(self.request.body)
+<<<<<<< HEAD
+        print(data.get('oldPassword'))
+        if not data.get('oldPassword',None) and not data.get('newPassword',None):
+            self.write("no angr")
+            return
+=======
         if not data.get('old_password',None) and not data.get('new_password',None):
             self.write("no angr")
             return
 
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
         try:
             old_hashed_password = await self.queryone("select password from " + session.get('identity', None) + ' where id=%s',str(session.get('user_id',None)))
         except NoResultError:
@@ -393,7 +428,11 @@ class ModifyPasswordHandler(appbase.BaseHandler):
         hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
             None,
             bcrypt.hashpw,
+<<<<<<< HEAD
+            tornado.escape.utf8(data.get('oldPassword',None)),
+=======
             tornado.escape.utf8(data.get('old_password',None)),
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
             tornado.escape.utf8(old_hashed_password.get('password',None)))
         hashed_password = tornado.escape.to_unicode(hashed_password)
 
@@ -401,7 +440,11 @@ class ModifyPasswordHandler(appbase.BaseHandler):
             new_hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
                 None,
                 bcrypt.hashpw,
+<<<<<<< HEAD
+                tornado.escape.utf8(data.get('newPassword',None)),
+=======
                 tornado.escape.utf8(data.get('new_password',None)),
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
                 bcrypt.gensalt())
             new_hashed_password = tornado.escape.to_unicode(new_hashed_password)
             await self.execute('update ' + session.get('identity', None) + ' set password=%s where id=%s',new_hashed_password,str(session.get('user_id',None)))
@@ -454,17 +497,25 @@ class getAllScoreHandler(appbase.BaseHandler):
         session = self.current_user
         if not session:
             self.write("no login")
+<<<<<<< HEAD
+        identity = session.get("identity")
+=======
             return
         session = json.loads(session)
         session = tornado.util.ObjectDict(session)
         identity = session.identity
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
         cno = str(self.request.body)
         if identity == 'teacher':
             try:
                 cno = dict(
                     cno=cno
                 )
+<<<<<<< HEAD
+                user_id = session.get("user_id")
+=======
                 user_id = session.user_id
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
                 all_cno = await self.query("select cno from tea_cour_view where id=%s",user_id)
                 if cno in all_cno:
                     result = await self.query("select no,name,score from score_view where cno=%s", cno['cno'])
@@ -491,3 +542,248 @@ class getAllScoreHandler(appbase.BaseHandler):
             message=result
         )
         self.write(json.dumps(data))
+<<<<<<< HEAD
+
+class GetUserCourseHandler(appbase.BaseHandler):
+    """docstring for ClassName"""
+    @tornado.web.authenticated
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        identity = session.get("identity")
+        user_id = session.get("user_id")
+        try:
+            username = await self.queryone("select no from " + identity + " where id=%s", str(user_id))
+            result = await self.query("select * from score_view where no=%s", username["no"])
+        except:
+            print("Error")
+        if username["no"] == self.get_argument("token", None):
+            data = dict(
+                name = username["no"],
+                user_id = user_id,
+                access = [identity],
+                avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
+                message = result
+            )
+            data = tornado.util.ObjectDict(data)
+            self.write(json.dumps(data))
+            return
+        self.set_status(404)
+
+class GetUserCourseScoreHandler(appbase.BaseHandler):
+    """docstring for ClassName"""
+    @tornado.web.authenticated
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        identity = session.get("identity")
+        user_id = session.get("user_id")
+        try:
+            username = await self.queryone("select no from " + identity + " where id=%s", str(user_id))
+            result = await self.query("select * from score_view where no=%s and score is not null", username["no"])
+        except:
+            print("Error")
+        if username["no"] == self.get_argument("token", None):
+            data = dict(
+                name = username["no"],
+                user_id = user_id,
+                access = [identity],
+                avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
+                message = result
+            )
+            data = tornado.util.ObjectDict(data)
+            self.write(json.dumps(data))
+            return
+        self.set_status(404)
+
+class GetUserGPAHandler(appbase.BaseHandler):
+    """docstring for ClassName"""
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        identity = session.get("identity")
+        user_id = session.get("user_id")
+        user_GPA = []
+        user = {'GPA':0,'score':0,'credits':0}
+        try:
+            username = await self.queryone("select no from " + identity + " where id=%s", str(user_id))
+            result = await self.query("select * from score_view where no=%s", username["no"])
+            for i in result:
+                if i["score"] != None:
+                    if i["score"] >=0:
+                        user['credits'] += i["ccredits"]
+                        print(i["score"])
+                        temp = i["score"] * i["ccredits"]
+                        user['score'] += temp
+            if user["score"] > 0:
+                GPA = format(user['score'] / user['credits'],"0.2f")
+                user["GPA"] = float(GPA)
+            user_GPA.append(user)
+            print(user_GPA)
+        except:
+            print("Error")
+        if username["no"] == self.get_argument("token", None):
+            data = dict(
+                name = username["no"],
+                user_id = user_id,
+                access = [identity],
+                avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
+                message = user_GPA
+            )
+            data = tornado.util.ObjectDict(data)
+            self.write(json.dumps(data))
+            return
+        self.set_status(404)
+
+class GetUserGPATimeHandler(appbase.BaseHandler):
+    """docstring for ClassName"""
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        identity = session.get("identity")
+        user_id = session.get("user_id")
+        try:
+            username = await self.queryone("select no from " + identity + " where id=%s", str(user_id))
+            result = await self.query("select ctime from score_view where no=%s group by ctime", username["no"])
+            print(result)
+        except:
+            print("Error")
+        if username["no"] == self.get_argument("token", None):
+            data = dict(
+                name = username["no"],
+                user_id = user_id,
+                access = [identity],
+                avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
+                message = result
+            )
+            data = tornado.util.ObjectDict(data)
+            self.write(json.dumps(data))
+            return
+        self.set_status(404)
+        
+class GetUserChosenGPAHandler(appbase.BaseHandler):
+    """docstring for ClassName"""
+    async def get(self):
+        self.set_allow_origin()
+        session = self.current_user
+        if not session:
+            self.write("no login")
+            return
+        identity = session.get("identity")
+        user_id = session.get("user_id")
+        user_GPA = []
+        user = {'GPA':0,'score':0,'credits':0}
+        result = []
+        print(result)
+        username = await self.queryone("select no from " + identity + " where id=%s", str(user_id))
+        key1 = self.get_argument("key1")
+        key2 = self.get_argument("key2")
+        if(key1 != key2):
+            print("ok")
+            max_time = max(key1[:4],key2[:4])
+            min_time = min(key1[:4],key2[:4])
+            if key1[:4] == max_time:
+                max_time_flag = key1[4:]
+                min_time_flag = key2[4:]
+            else:
+                max_time_flag = key2[4:]
+                min_time_flag = key1[4:]
+            min_time = int(min_time)
+            max_time = int(max_time)
+            try:
+                if min_time_flag == "上" and max_time_flag == "下":
+                    while(min_time <= max_time):
+                        time = str(min_time) +"%"
+                        data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
+                        for i in data:
+                            result.append(i)
+                        min_time += 1
+                elif min_time_flag == "下" and max_time_flag == "下":
+                    time = str(min_time)+"下"
+                    data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
+                    for i in data:
+                        result.append(i)
+                    while(min_time <= max_time):
+                        min_time += 1
+                        time = str(min_time) +"%"
+                        print(time)
+                        data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
+                        for i in data:
+                            result.append(i)
+                elif min_time_flag == "下" and max_time_flag == "上":
+                    time = str(min_time)+"下"
+                    data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
+                    for i in data:
+                        result.append(i)
+                    time = str(max_time)+"下"
+                    data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
+                    for i in data:
+                        result.append(i)
+                    max_time -= 1
+                    while(min_time <= max_time):
+                        min_time += 1
+                        time = str(min_time) +"%"
+                        data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
+                        for i in data:
+                            result.append(i)
+                elif min_time_flag == "上" and max_time_flag == "上":
+                    time = str(max_time)+"下"
+                    data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
+                    for i in data:
+                        result.append(i)
+                    max_time -= 1
+                    while(min_time <= max_time):
+                        time = str(min_time) +"%"
+                        data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
+                        for i in data:
+                            result.append(i)
+            except Exception as e:
+                print(e)
+        elif key1 == key2:
+            min_time = key1
+            data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],min_time)
+            print(type(data))
+            for i in data:
+                result.append(i)
+        print(result)
+        for i in result:
+            if i["score"] != None:
+                if int(i["score"]) >=0:
+                    user['credits'] += i["ccredits"]
+                    print(i["score"])
+                    temp = i["score"] * i["ccredits"]
+                    user['score'] += temp
+            if user["score"] > 0:
+                GPA = format(user['score'] / user['credits'],"0.2f")
+                user["GPA"] = float(GPA)
+            else:
+                user["GPA"] = 0
+        print(user)
+        user_GPA.append(user)
+        print(user_GPA)
+        if username["no"] == self.get_argument("token", None):
+            data = dict(
+                name = username["no"],
+                user_id = user_id,
+                access = [identity],
+                avator = 'https://file.iviewui.com/dist/a0e88e83800f138b94d2414621bd9704.png',
+                message = user_GPA
+            )
+            data = tornado.util.ObjectDict(data)
+            self.write(json.dumps(data))
+            return
+        self.set_status(404)
+=======
+>>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
