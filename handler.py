@@ -86,7 +86,7 @@ class UserInfoHandler(appbase.BaseHandler):
         if not session:
             self.write("no login")
             return
-            
+
         try:
             result = await self.queryone("select * from " + identity + " where id=%s", str(user_id))
         except NoResultError:
@@ -266,7 +266,6 @@ class InsertDataHandler(appbase.BaseHandler):
         if not session:
             self.write("no login")
             return
-        session = json.loads(session)
         session = tornado.util.ObjectDict(session)
         id = session.user_id
         result = await self.query("select cno from tea_cour_view where id=%s",str(id))
@@ -314,34 +313,49 @@ class CommitTableData(appbase.BaseHandler):
             self.write("请不要重复提交")
             return
 
+
 class GetScoreDataHandler(appbase.BaseHandler):
     async def options(self):
         self.set_status(204)
         self.set_allow_origin()
+
+    @tornado.web.authenticated
     async def post(self):
         self.set_allow_origin()
         session = self.current_user
-        user_id = session.get('user_id',None)
-        key = str(self.request.body)
-        try:
-            flag = self.queryone("select cno from tea_cour_view where id=%s and cno=%s",str(user_id),key)
-        except:
-            self.set_status(404)
+
+        identity = session.get('identity', None)
+        user_id = session.get('user_id', None)
+        key = self.request.body
+        cname = None·
+        if identity == STUDENT:
             return
-        result = await self.queryone("select max(score),min(score),avg(score),count(*) as all from score_view where cno=%s",key)
-        tmp = await self.query("select t.con,count(*) from (select (score_view.score/10)con from score_view where cno=%s)t group by t.con",key)
-        nodie = 0
-        for _ in tmp:
-            if _.get('con',None)>6:
-                nodie += _.get('')
-        all = result.get('all',None)
-        die = all - nodie
-        result.update(sodie=((die*1.0)/all)*100,nodie=100-((die*1.0)/all)*100,good=all-die)
-        data = dict(
-            message = result
-        )
-        data = tornado.util.ObjectDict(data)
-        self.write(json.dumps(data))
+        try:
+            if identity == TEACHER:
+                cname = await self.queryone("select cnanme from tea_cour_view where id=%s and cno=%s",str(user_id),key)
+            else:
+                cname = await self.queryone("select cnanme from course where cno=%s",key)
+        except:
+            self.write(json.dumps(dict(message=[])))
+            return
+
+        result = await self.queryone("select count(score),avg(score) from score_view where cno=%s",key)
+        result_60 = await self.queryone("select count(*) from score_view where cno=%s and score<60",key)
+        result_60_75 = await self.queryone("select count(*) from score_view where cno=%s and score>=60 and score<75 ",key)
+        result_75_85 = await self.queryone("select count(*) from score_view where cno=%s and score>=75 and score<85 ",key)
+        result_85_95 = await self.queryone("select count(*) from score_view where cno=%s and score>=85 and score<95 ",key)
+        result_95_100 = await self.queryone("select count(*) from score_view where cno=%s and score>=95 and score<100 ",key)
+
+        result.update(cname = cname.get('cname',None),
+                        avg=round(result['avg'],2),
+                        result_60=result_60.get('count', None),
+                        result_60_75=result_60_75.get('count', None),
+                        result_75_85=result_75_85.get('count', None),
+                        result_85_95=result_85_95.get('count', None),
+                        result_95_100=result_95_100.get('count', None),
+                        nodie=round(result_60.get('count', None) / (result['count']-result_60.get('count', None))*100,2))
+        self.write(json.dumps(dict(message=result)))
+
 
 class GetScoreCnoDataHandler(appbase.BaseHandler):
     async def get(self):
@@ -398,38 +412,31 @@ class TestqueryHandler(appbase.BaseHandler):
     async def get(self):
         pass
     async def post(self):
-        self.set_allow_origin()
-        key = str(self.request.body)
-        result = await self.queryone("select max(score),min(score),avg(score) from score_view where cno=%s",key)
-        die = result['die']
-        all = result['all']
-        result.update(sodie=((die*1.0)/all)*100,nodie=100-((die*1.0)/all)*100,good=all-die)
-        data = dict(
-            message = result
-        )
-        data = tornado.util.ObjectDict(data)
-        self.write(json.dumps(data))
-        # time = self.get_argument("time", None)
-        # st = self.get_argument("st", None)
-        #
-        # try:
-        #     result = await self.query("select no,name,cno,cname,score from score_view where no=%s and ctime=%s", st, time)
-        # except NoResultError:
-        #     self.write("no data fond.")
-        #     self.set_status(404)
-        #     return
-        # # print(st)
-        # # print(time)
-        # # self.write(json.dumps(result))
-        # data = dict(
-        #     no=st,
-        #     name=list(map(lambda x: x.pop('name',None), result))[0],
-        #     score=[]
-        # )
-        # for _ in result:
-        #     if _.get('score') != None:
-        #         data['score'].append(_)
-        # self.write(json.dumps(data))
+        data = json.loads(self.request.body)
+        print(data)
+        if not data.get('old_password',None) and not data.get('new_password',None):
+            self.write("no angr")
+            return
+
+        old_hashed_password = await self.queryone("select password from management where id=1")
+        hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
+            None,
+            bcrypt.hashpw,
+            tornado.escape.utf8(data.get('old_password',None)),
+            tornado.escape.utf8(old_hashed_password.get('password',None)))
+        hashed_password = tornado.escape.to_unicode(hashed_password)
+
+        if hashed_password == old_hashed_password.get('password',None):
+            new_hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
+                None,
+                bcrypt.hashpw,
+                tornado.escape.utf8(data.get('new_password',None)),
+                bcrypt.gensalt())
+            new_hashed_password = tornado.escape.to_unicode(new_hashed_password)
+            await self.execute('update management set password=%s where id=1',new_hashed_password)
+            return
+        self.set_status(403)
+
 
 class CookieHandler(appbase.BaseHandler):
     async def get(self):
