@@ -266,17 +266,19 @@ class InsertDataHandler(appbase.BaseHandler):
         if not session:
             self.write("no login")
             return
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-        id = session.get("user_id")
-=======
-        session = json.loads(session)
->>>>>>> fy
         session = tornado.util.ObjectDict(session)
         id = session.user_id
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
+
         result = await self.query("select cno from tea_cour_view where id=%s",str(id))
+        add = []
+        for i in result:
+            course_result = await self.query("select id from course where cno=%s",i['cno'])
+            tmp_score_result = await self.query("select id from tmp_scores where course=%s",course_result[0]['id'])
+            score_result = await self.query("select score from score_view where cno=%s limit 1",i['cno'])
+            if len(tmp_score_result) != 0 or score_result[0]["score"] != None:
+                add.append(i)
+        for i in add:
+            result.remove(i)
         data = dict(
             message = result
         )
@@ -287,19 +289,9 @@ class InsertDataHandler(appbase.BaseHandler):
 class TableDataHandle(appbase.BaseHandler):
     async def post(self):
         self.set_allow_origin()
-<<<<<<< HEAD
-        key = self.request.body.decode("utf8")
-        print(type(key))
-        print(key)
-        result = await self.query("select no,name from score_view where cno=%s",key)
-        print(result)
-        list(map(lambda x:x.update(regular=0,exam=0,expr=0),result))
-        print(result)
-=======
-        key = str(self.request.body)
+        key = self.request.body.decode('utf8')
         result = await self.query("select no,name from score_view where cno=%s",key)
         list(map(lambda x:x.update(regular=0,exam=0,expr=0),result))
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
         data = dict(
             message = result
         )
@@ -344,15 +336,16 @@ class GetScoreDataHandler(appbase.BaseHandler):
 
         identity = session.get('identity', None)
         user_id = session.get('user_id', None)
-        key = self.request.body
-        cname = None·
+        key = self.request.body.decode('utf8')
+        cname = None
         if identity == STUDENT:
             return
         try:
             if identity == TEACHER:
-                cname = await self.queryone("select cnanme from tea_cour_view where id=%s and cno=%s",str(user_id),key)
+                cname = await self.queryone("select cname from tea_cour_view where id=%s and cno=%s",str(user_id),key)
+                print(cname)
             else:
-                cname = await self.queryone("select cnanme from course where cno=%s",key)
+                cname = await self.queryone("select cname from course where cno=%s",key)
         except:
             self.write(json.dumps(dict(message=[])))
             return
@@ -363,7 +356,7 @@ class GetScoreDataHandler(appbase.BaseHandler):
         result_75_85 = await self.queryone("select count(*) from score_view where cno=%s and score>=75 and score<85 ",key)
         result_85_95 = await self.queryone("select count(*) from score_view where cno=%s and score>=85 and score<95 ",key)
         result_95_100 = await self.queryone("select count(*) from score_view where cno=%s and score>=95 and score<100 ",key)
-
+        # print(result_60)
         result.update(cname = cname.get('cname',None),
                         avg=round(result['avg'],2),
                         result_60=result_60.get('count', None),
@@ -382,13 +375,7 @@ class GetScoreCnoDataHandler(appbase.BaseHandler):
         if not session:
             self.write("no login")
             return
-<<<<<<< HEAD
         id = session.get("user_id")
-=======
-        session = json.loads(session)
-        session = tornado.util.ObjectDict(session)
-        id = session.user_id
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
         result = await self.query("(select cno from score_view where score is not null) union (select cno from tea_cour_view where id=%s)",str(id))
         data = dict(
             message = result
@@ -398,27 +385,17 @@ class GetScoreCnoDataHandler(appbase.BaseHandler):
         return
 
 class ModifyPasswordHandler(appbase.BaseHandler):
-<<<<<<< HEAD
     async def options(self):
         self.set_status(204)
         self.set_allow_origin()
-=======
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
     @tornado.web.authenticated
     async def post(self):
         session = self.current_user
         data = json.loads(self.request.body)
-<<<<<<< HEAD
         print(data.get('oldPassword'))
         if not data.get('oldPassword',None) and not data.get('newPassword',None):
             self.write("no angr")
             return
-=======
-        if not data.get('old_password',None) and not data.get('new_password',None):
-            self.write("no angr")
-            return
-
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
         try:
             old_hashed_password = await self.queryone("select password from " + session.get('identity', None) + ' where id=%s',str(session.get('user_id',None)))
         except NoResultError:
@@ -428,11 +405,7 @@ class ModifyPasswordHandler(appbase.BaseHandler):
         hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
             None,
             bcrypt.hashpw,
-<<<<<<< HEAD
             tornado.escape.utf8(data.get('oldPassword',None)),
-=======
-            tornado.escape.utf8(data.get('old_password',None)),
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
             tornado.escape.utf8(old_hashed_password.get('password',None)))
         hashed_password = tornado.escape.to_unicode(hashed_password)
 
@@ -440,11 +413,7 @@ class ModifyPasswordHandler(appbase.BaseHandler):
             new_hashed_password = await tornado.ioloop.IOLoop.current().run_in_executor(
                 None,
                 bcrypt.hashpw,
-<<<<<<< HEAD
                 tornado.escape.utf8(data.get('newPassword',None)),
-=======
-                tornado.escape.utf8(data.get('new_password',None)),
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
                 bcrypt.gensalt())
             new_hashed_password = tornado.escape.to_unicode(new_hashed_password)
             await self.execute('update ' + session.get('identity', None) + ' set password=%s where id=%s',new_hashed_password,str(session.get('user_id',None)))
@@ -497,25 +466,14 @@ class getAllScoreHandler(appbase.BaseHandler):
         session = self.current_user
         if not session:
             self.write("no login")
-<<<<<<< HEAD
         identity = session.get("identity")
-=======
-            return
-        session = json.loads(session)
-        session = tornado.util.ObjectDict(session)
-        identity = session.identity
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
-        cno = str(self.request.body)
+        cno = self.request.body.decode('utf8')
         if identity == 'teacher':
             try:
                 cno = dict(
                     cno=cno
                 )
-<<<<<<< HEAD
                 user_id = session.get("user_id")
-=======
-                user_id = session.user_id
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
                 all_cno = await self.query("select cno from tea_cour_view where id=%s",user_id)
                 if cno in all_cno:
                     result = await self.query("select no,name,score from score_view where cno=%s", cno['cno'])
@@ -542,7 +500,6 @@ class getAllScoreHandler(appbase.BaseHandler):
             message=result
         )
         self.write(json.dumps(data))
-<<<<<<< HEAD
 
 class GetUserCourseHandler(appbase.BaseHandler):
     """docstring for ClassName"""
@@ -672,7 +629,7 @@ class GetUserGPATimeHandler(appbase.BaseHandler):
             self.write(json.dumps(data))
             return
         self.set_status(404)
-        
+
 class GetUserChosenGPAHandler(appbase.BaseHandler):
     """docstring for ClassName"""
     async def get(self):
@@ -727,19 +684,19 @@ class GetUserChosenGPAHandler(appbase.BaseHandler):
                     data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
                     for i in data:
                         result.append(i)
-                    time = str(max_time)+"下"
+                    time = str(max_time)+"上"
                     data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
                     for i in data:
                         result.append(i)
                     max_time -= 1
-                    while(min_time <= max_time):
+                    while(min_time < max_time):
                         min_time += 1
                         time = str(min_time) +"%"
                         data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
                         for i in data:
                             result.append(i)
                 elif min_time_flag == "上" and max_time_flag == "上":
-                    time = str(max_time)+"下"
+                    time = str(max_time)+"上"
                     data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
                     for i in data:
                         result.append(i)
@@ -749,6 +706,7 @@ class GetUserChosenGPAHandler(appbase.BaseHandler):
                         data = await self.query("select * from score_view where no= %s and ctime like %s",username["no"],time)
                         for i in data:
                             result.append(i)
+                        min_time += 1
             except Exception as e:
                 print(e)
         elif key1 == key2:
@@ -785,5 +743,3 @@ class GetUserChosenGPAHandler(appbase.BaseHandler):
             self.write(json.dumps(data))
             return
         self.set_status(404)
-=======
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b

@@ -16,11 +16,8 @@ route_handler = [
     (r"/confirm_score", handler.ConfirmSCHandler),
     (r"/cookie", handler.CookieHandler),
     (r"/test", handler.TestqueryHandler),
-<<<<<<< HEAD
     (r"/updatePassword",handler.ModifyPasswordHandler),
-=======
-    (r"/modify_password",handler.ModifyPasswordHandler),
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
+
 
     (r"/get_insert_data", handler.InsertDataHandler),
     (r"/get_table_data",handler.TableDataHandle),
@@ -29,15 +26,13 @@ route_handler = [
     (r"/getScoreData",handler.GetScoreDataHandler),
     (r"/getAllScore",handler.getAllScoreHandler),
 
-<<<<<<< HEAD
+
 	(r"/get_GPA",handler.GetUserGPAHandler),
     (r"/get_Course",handler.GetUserCourseHandler),
     (r"/get_GPATime",handler.GetUserGPATimeHandler),
     (r"/get_ChosenGPA",handler.GetUserChosenGPAHandler),
     (r"/get_Score",handler.GetUserCourseScoreHandler)
 
-=======
->>>>>>> b83a714d993dcc29ba092ab774144004fe93935b
 
 ]
 
