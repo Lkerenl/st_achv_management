@@ -316,8 +316,9 @@ class CommitTableData(appbase.BaseHandler):
         score_result = await self.query("select score from score_view where cno=%s limit 1",cno)
 
         if len(tmp_score_result) == 0 and score_result[0]["score"] == None:
-            for info in score_info:
-                await self.execute("insert into tmp_scores(regular,exam,student,course,expr) values(%s,%s,%s,%s,%s)",str(info['regular']),str(info['exam']),str(student_result[0]['id']),str(course_result[0]['id']),str(info['expr']))
+            for i in range(len(score_info)):
+                student_result = await self.query("select id from student where no=%s",score_info[i]['no'])
+                await self.execute("insert into tmp_scores(regular,exam,student,course,expr) values(%s,%s,%s,%s,%s)",str(score_info[i]['regular']),str(score_info[i]['exam']),str(student_result[0]['id']),str(course_result[0]['id']),str(score_info[i]['expr']))
             self.write("写入成功")
         else:
             self.write("请不要重复提交")
